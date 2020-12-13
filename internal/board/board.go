@@ -1,6 +1,8 @@
 package board
 
 import (
+	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -47,4 +49,22 @@ func (board Board) String() string {
 		builder.WriteRune('\n')
 	}
 	return builder.String()
+}
+
+func (board *Board) Step(color State, position string) error {
+	if color != Green && color != Red {
+		return errors.New("only green and red state available")
+	}
+	if len(position) != 2 {
+		return fmt.Errorf("position must be from A1 to H8, got: %s", position)
+	}
+	column := position[0] - byte('A')
+	line := position[1] - byte('1')
+	if column > 7 || line > 7 {
+		return fmt.Errorf("position must be from A1 to H8, got: %s", position)
+	}
+
+	// TODO check
+	board.cells[column+line*8] = color
+	return nil
 }
