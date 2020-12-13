@@ -13,10 +13,20 @@ func main() {
 
 	err := gameBoard.Step(board.Green, "B3")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	fmt.Println(gameBoard)
 
-	gameBoard.Step(board.Red, "G7")
+	err = gameBoard.Step(board.Red, "G7")
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Println(gameBoard)
+
+	fmt.Println(gameBoard.Show("E3"))
+	err = gameBoard.Step(board.Green, "E3")
+	if err != nil {
+		log.Println(err)
+	}
 	fmt.Println(gameBoard)
 }
