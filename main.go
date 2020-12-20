@@ -23,7 +23,6 @@ func main() {
 	}
 	fmt.Println(gameBoard)
 
-	fmt.Println(gameBoard.Show("E3"))
 	err = gameBoard.Step(board.Green, "E3")
 	if err != nil {
 		log.Println(err)

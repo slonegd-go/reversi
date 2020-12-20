@@ -20,7 +20,8 @@ func (state State) not(other State) bool {
 }
 
 type Board struct {
-	cells [64]State
+	cells     [64]State
+	stepCellN int
 }
 
 func New() *Board {
@@ -30,7 +31,8 @@ func New() *Board {
 	cells[35] = Red
 	cells[36] = Green
 	return &Board{
-		cells: cells,
+		cells:     cells,
+		stepCellN: -1,
 	}
 }
 
@@ -41,38 +43,12 @@ func (board Board) String() string {
 	for i := 0; i < 8; i++ {
 		builder.WriteString(strconv.Itoa(i + 1))
 		for j := 0; j < 8; j++ {
-			switch board.cells[i*8+j] {
-			case Empty:
-				builder.WriteString("  ")
-			case Green:
-				builder.WriteString(" G")
-			case Red:
-				builder.WriteString(" R")
-			}
-		}
-		builder.WriteRune('\n')
-	}
-	return builder.String()
-}
-
-func (board Board) Show(position string) string {
-	cellN, err := parseCellN(position)
-	if err != nil {
-		cellN = -1
-	}
-
-	var builder strings.Builder
-	builder.Grow(101)
-	builder.WriteString("\n\\ A B C D E F G H\n")
-	for i := 0; i < 8; i++ {
-		builder.WriteString(strconv.Itoa(i + 1))
-		for j := 0; j < 8; j++ {
 			number := i*8 + j
-			if cellN == number {
+			if board.stepCellN == number {
 				builder.WriteString(" x")
 				continue
 			}
-			switch board.cells[number] {
+			switch board.cells[i*8+j] {
 			case Empty:
 				builder.WriteString("  ")
 			case Green:
@@ -96,17 +72,20 @@ func (board *Board) Step(color State, position string) error {
 		return fmt.Errorf("parse cell number: %w", err)
 	}
 
-	err = board.check(int(cellN), color)
+	board.stepCellN = cellN
+
+	directions, err := board.check(int(cellN), color)
 	if err != nil {
 		return fmt.Errorf("check: %w", err)
 	}
 	board.cells[cellN] = color
+	board.fill(cellN, directions, color)
 	return nil
 }
 
-func (board Board) check(cellN int, color State) error {
+func (board Board) check(cellN int, color State) ([]direction, error) {
 	if board.cells[cellN] != Empty {
-		return errors.New("cell not empty")
+		return nil, errors.New("cell not empty")
 	}
 
 	column := cellN % 8
@@ -134,10 +113,44 @@ func (board Board) check(cellN int, color State) error {
 	// TODO fill with numbers
 
 	if len(directions) == 0 {
-		return errors.New("no other color beside")
+		return nil, errors.New("no other color beside")
 	}
 
-	return nil
+	return directions, nil
+}
+
+func (board *Board) fill(cellN int, directions []direction, color State) int {
+	count := 1
+	board.cells[cellN] = color
+	for _, direction := range directions {
+		switch direction {
+		case up:
+			for i := cellN - 8; board.cells[i].not(color); i -= 8 {
+				board.cells[i] = color
+				count++
+			}
+
+		case down:
+			for i := cellN + 8; board.cells[i].not(color); i += 8 {
+				board.cells[i] = color
+				count++
+			}
+
+		case left:
+			for i := cellN - 1; board.cells[i].not(color); i-- {
+				board.cells[i] = color
+				count++
+			}
+
+		case right:
+			for i := cellN + 1; board.cells[i].not(color); i++ {
+				board.cells[i] = color
+				count++
+			}
+		} // switch direction
+	} // range directions
+
+	return count
 }
 
 func parseCellN(position string) (int, error) {
