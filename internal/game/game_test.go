@@ -1,4 +1,4 @@
-package board
+package game
 
 import (
 	"testing"
@@ -6,30 +6,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBoard_Step(t *testing.T) {
+func TestGame_Step(t *testing.T) {
 	tests := []struct {
 		name     string
-		board    *Board
+		game     *Game
 		color    State
 		position string
 		wantErr  string
 	}{
 		{
 			name:     "E3 green down must ok",
-			board:    New(),
+			game:     New(),
 			color:    Green,
 			position: "E3",
 		},
 		{
 			name:     "D3 green down must not ok",
-			board:    New(),
+			game:     New(),
 			color:    Green,
 			position: "D3",
 			wantErr:  "check: no other color beside",
 		},
 	}
 	for _, tt := range tests {
-		err := tt.board.Step(tt.color, tt.position)
+		err := tt.game.Step(tt.color, tt.position)
 		if tt.wantErr != "" {
 			assert.Error(t, err, tt.name)
 			assert.Equal(t, tt.wantErr, err.Error())
@@ -39,23 +39,23 @@ func TestBoard_Step(t *testing.T) {
 	}
 }
 
-func TestBoard_fill(t *testing.T) {
+func TestGame_fill(t *testing.T) {
 	tests := map[string]struct {
 		name       string
-		board      *Board
+		game       *Game
 		cellN      int
 		directions []direction
 		color      State
 		want       int
-		wantBoard  string
+		wantGame   string
 	}{
 		"up": {
-			board:      New(),
+			game:       New(),
 			directions: []direction{up},
 			cellN:      cellN("D6"),
 			color:      Green,
 			want:       2,
-			wantBoard: `
+			wantGame: `
 \ A B C D E F G H
 1                
 2                
@@ -69,12 +69,12 @@ func TestBoard_fill(t *testing.T) {
 		},
 
 		"down": {
-			board:      New(),
+			game:       New(),
 			directions: []direction{down},
 			cellN:      cellN("D3"),
 			color:      Red,
 			want:       2,
-			wantBoard: `
+			wantGame: `
 \ A B C D E F G H
 1                
 2                
@@ -88,12 +88,12 @@ func TestBoard_fill(t *testing.T) {
 		},
 
 		"right": {
-			board:      New(),
+			game:       New(),
 			directions: []direction{right},
 			cellN:      cellN("C4"),
 			color:      Red,
 			want:       2,
-			wantBoard: `
+			wantGame: `
 \ A B C D E F G H
 1                
 2                
@@ -107,12 +107,12 @@ func TestBoard_fill(t *testing.T) {
 		},
 
 		"left": {
-			board:      New(),
+			game:       New(),
 			directions: []direction{left},
 			cellN:      cellN("F4"),
 			color:      Green,
 			want:       2,
-			wantBoard: `
+			wantGame: `
 \ A B C D E F G H
 1                
 2                
@@ -126,17 +126,17 @@ func TestBoard_fill(t *testing.T) {
 		},
 
 		"left and up": {
-			board: func() *Board {
-				board := New()
-				board.cells[cellN("F4")] = Green
-				board.cells[cellN("F3")] = Red
-				return board
+			game: func() *Game {
+				game := New()
+				game.cells[cellN("F4")] = Green
+				game.cells[cellN("F3")] = Red
+				return game
 			}(),
 			directions: []direction{left, up},
 			cellN:      cellN("F5"),
 			color:      Red,
 			want:       3,
-			wantBoard: `
+			wantGame: `
 \ A B C D E F G H
 1                
 2                
@@ -150,9 +150,9 @@ func TestBoard_fill(t *testing.T) {
 		},
 	}
 	for name, tt := range tests {
-		got := tt.board.fill(tt.cellN, tt.directions, tt.color)
+		got := tt.game.fill(tt.cellN, tt.directions, tt.color)
 		assert.Equal(t, tt.want, got, name)
-		assert.Equal(t, tt.wantBoard, tt.board.String(), name)
+		assert.Equal(t, tt.wantGame, tt.game.String(), name)
 	}
 }
 

@@ -1,31 +1,26 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
-	"github.com/slonegd-go/reversi/internal/board"
+	"github.com/slonegd-go/reversi/internal/game"
 )
 
 func main() {
-	gameBoard := board.New()
-	fmt.Println(gameBoard)
+	currentGame := game.New(game.WithLogger(log.Printf))
 
-	err := gameBoard.Step(board.Green, "B3")
+	err := currentGame.Step(game.Green, "B3")
 	if err != nil {
 		log.Println(err)
 	}
-	fmt.Println(gameBoard)
 
-	err = gameBoard.Step(board.Red, "G7")
+	err = currentGame.Step(game.Red, "G7")
 	if err != nil {
 		log.Println(err)
 	}
-	fmt.Println(gameBoard)
 
-	err = gameBoard.Step(board.Green, "E3")
+	err = currentGame.Step(game.Green, "E3")
 	if err != nil {
 		log.Println(err)
 	}
-	fmt.Println(gameBoard)
 }
