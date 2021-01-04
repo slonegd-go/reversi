@@ -139,7 +139,7 @@ func n(s string) int {
 	return result
 }
 
-func color(s string) State {
+func c(s string) State {
 	switch s {
 	case "Red":
 		return Red
@@ -157,7 +157,7 @@ func g(description string) *Game {
 	cells := strings.Split(description, ",")
 	for _, cell := range cells {
 		nColor := strings.Split(cell, ":")
-		result.cells[cellN(nColor[0])] = color(nColor[1])
+		result.cells[cellN(nColor[0])] = c(nColor[1])
 	}
 
 	return result

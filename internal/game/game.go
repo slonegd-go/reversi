@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
+
 	"github.com/slonegd-go/reversi/internal/player"
 )
 
@@ -96,6 +98,11 @@ func (game *Game) endCheck(player.Color) bool {
 	return false
 }
 
+var (
+	green = color.New(color.FgGreen).SprintFunc()
+	red   = color.New(color.FgRed).SprintFunc()
+)
+
 func (game Game) String() string {
 	var builder strings.Builder
 	builder.Grow(101)
@@ -112,9 +119,9 @@ func (game Game) String() string {
 			case Empty:
 				builder.WriteString("  ")
 			case Green:
-				builder.WriteString(" G")
+				builder.WriteString(green(" G"))
 			case Red:
-				builder.WriteString(" R")
+				builder.WriteString(red(" R"))
 			}
 		}
 		builder.WriteRune('\n')

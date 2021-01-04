@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"strings"
 
@@ -16,7 +15,6 @@ type Player struct {
 func (player *Player) Step([]player.Color) string {
 	reader := bufio.NewReader(os.Stdin)
 	result, _ := reader.ReadString('\n')
-	fmt.Printf("%d", len(result))
 	return strings.TrimSpace(result)
 }
 func (player *Player) Notify(player.Result)    {}
