@@ -72,9 +72,9 @@ func New(p1, p2 player.Player, opts ...Option) *Game {
 	return game
 }
 
-func (game *Game) Start() {
+func (game *Game) Start() string {
 	game.log(game.String())
-	for i := 0; i < 60; i++ {
+	for i := 0; i < 64; i++ {
 		currentPlayer := game.players[i%2]
 		for {
 			game.log("%s player step:", currentPlayer.Color())
@@ -86,15 +86,57 @@ func (game *Game) Start() {
 			}
 			break
 		}
-		ok := game.endCheck(currentPlayer.Color())
-		if ok {
-			currentPlayer.Notify(player.Win)
-			return
+		end := game.endCheck(currentPlayer.Color())
+		if end {
+			winPlayer, losePlayer := game.compute()
+			result := fmt.Sprintf("%s player win", winPlayer.Color())
+			game.log(result)
+			winPlayer.Notify(player.Win)
+			losePlayer.Notify(player.Lose)
+			return result
 		}
 	}
+	return "error"
 }
 
-func (game *Game) endCheck(player.Color) bool {
+func (game *Game) endCheck(color player.Color) bool {
+	otherPlayer := Green
+	if color == player.Green {
+		otherPlayer = Red
+	}
+	return !game.hasSteps(otherPlayer)
+}
+
+func (game *Game) compute() (win player.Player, lose player.Player) {
+	win = game.players[0]
+	lose = game.players[1]
+	green, red := 0, 0
+	for _, cell := range game.cells {
+		switch cell {
+		case Green:
+			green++
+		case Red:
+			red++
+		}
+	}
+	game.log("green %d:%d red", green, red)
+	if red > green {
+		win, lose = lose, win
+	}
+	return win, lose
+}
+
+func (game *Game) hasSteps(color State) bool {
+	for i, cell := range game.cells {
+		if cell != Empty {
+			continue
+		}
+		for _, direction := range directionList {
+			if game.count(i, direction, color) != 0 {
+				return true
+			}
+		}
+	}
 	return false
 }
 
