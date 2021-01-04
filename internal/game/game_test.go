@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/slonegd-go/reversi/internal/player/cli"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +16,7 @@ func TestGame_Step(t *testing.T) {
 		wantErr  string
 		wantGame string
 	}{
-		"E3 green down must ok": {game: New(), color: Green, position: "E3", wantGame: `
+		"E3 green down must ok": {game: g(""), color: Green, position: "E3", wantGame: `
 \ A B C D E F G H
 1                
 2                
@@ -27,7 +28,7 @@ func TestGame_Step(t *testing.T) {
 8                
 `},
 
-		"D3 green down must not ok": {game: New(), color: Green, position: "D3",
+		"D3 green down must not ok": {game: g(""), color: Green, position: "D3",
 			wantErr: "unavailable step", wantGame: `
 \ A B C D E F G H
 1                
@@ -78,7 +79,8 @@ func TestGame_count(t *testing.T) {
 		want      int
 		wantGame  string
 	}{
-		"↖ border": {game: New(), cellN: n("A1"), color: Red, direction: up, want: 0},
+		"↖ border": {game: g(""), cellN: n("A1"), color: Red, direction: up, want: 0},
+		"← border": {game: g(""), cellN: n("A1"), color: Red, direction: left, want: 0},
 		// up cases
 		"↑ bad with empty":  {game: g("B1:Empty,B2:Green,B3:Green"), cellN: n("B4"), color: Red, direction: up, want: 0},
 		"↑ bad with border": {game: g("B1:Green,B2:Green,B3:Green"), cellN: n("B4"), color: Red, direction: up, want: 0},
@@ -148,7 +150,10 @@ func color(s string) State {
 }
 
 func g(description string) *Game {
-	result := New()
+	result := New(&cli.Player{}, &cli.Player{})
+	if description == "" {
+		return result
+	}
 	cells := strings.Split(description, ",")
 	for _, cell := range cells {
 		nColor := strings.Split(cell, ":")
