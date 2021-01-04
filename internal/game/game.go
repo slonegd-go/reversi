@@ -185,6 +185,123 @@ func (game *Game) fill(cellN int, directions []direction, color State) int {
 	return count
 }
 
+func (game *Game) count(cellN int, direction direction, color State, change ...func(i int)) int {
+	changeFunc := func(_ int) {}
+	if len(change) != 0 {
+		changeFunc = change[0]
+	}
+	count := 0
+
+	switch direction {
+	case up:
+		i := cellN - 8
+		for ; i < 0 || game.cells[i] != color; i -= 8 {
+			changeFunc(i) // game.cells[i] = color
+			count++
+			if i < 8 || game.cells[i] == Empty {
+				return 0
+			}
+		}
+		if i < 0 {
+			return 0
+		}
+
+	case down:
+		i := cellN + 8
+		for ; i > 63 || game.cells[i] != color; i += 8 {
+			changeFunc(i)
+			if i > 63-8 || game.cells[i] == Empty {
+				return 0
+			}
+			count++
+		}
+		if i > 63 {
+			return 0
+		}
+
+	case left:
+		i := cellN - 1
+		for ; i < 0 || game.cells[i] != color; i-- {
+			changeFunc(i)
+			if i%8 == 0 || game.cells[i] == Empty {
+				return 0
+			}
+			count++
+		}
+		if i < 0 {
+			return 0
+		}
+
+	case right:
+		i := cellN + 1
+		for ; i > 63 || game.cells[i] != color; i++ {
+			changeFunc(i)
+			if i%8 == 7 || game.cells[i] == Empty {
+				return 0
+			}
+			count++
+		}
+		if i > 63 {
+			return 0
+		}
+
+	case leftup:
+		i := cellN - 9
+		for ; i < 0 || game.cells[i] != color; i -= 9 {
+			changeFunc(i)
+			if i%8 == 0 || i < 8 || game.cells[i] == Empty {
+				return 0
+			}
+			count++
+		}
+		if i < 0 {
+			return 0
+		}
+
+	case rightup:
+		i := cellN - 7
+		for ; i < 0 || game.cells[i] != color; i -= 7 {
+			changeFunc(i)
+			if i%8 == 7 || i < 8 || game.cells[i] == Empty {
+				return 0
+			}
+			count++
+		}
+		if i < 0 {
+			return 0
+		}
+
+	case rightdown:
+		i := cellN + 9
+		for ; i > 63 || game.cells[i] != color; i += 9 {
+			changeFunc(i)
+			if i%8 == 7 || i > 63-8 || game.cells[i] == Empty {
+				return 0
+			}
+			count++
+		}
+		if i > 63 {
+			return 0
+		}
+
+	case leftdown:
+		i := cellN + 7
+		for ; i > 63 || game.cells[i] != color; i += 7 {
+			changeFunc(i)
+			if i%8 == 0 || i > 63-8 || game.cells[i] == Empty {
+				return 0
+			}
+			count++
+		}
+		if i > 63 {
+			return 0
+		}
+
+	} // switch direction
+
+	return count
+}
+
 func parseCellN(position string) (int, error) {
 	if len(position) != 2 {
 		return 0, fmt.Errorf("position must be from A1 to H8, got: %s", position)
