@@ -103,86 +103,30 @@ func (game *Game) Step(color State, position string) error {
 
 	game.log(game.String())
 
-	directions, err := game.check(int(cellN), color)
-	if err != nil {
-		return fmt.Errorf("check: %w", err)
+	directions := []direction{}
+	for _, direction := range directionList {
+		if game.count(cellN, direction, color) != 0 {
+			directions = append(directions, direction)
+		}
 	}
+	if len(directions) == 0 {
+		return errors.New("unavailable step")
+	}
+
+	game.stepCellN = -1
 	game.cells[cellN] = color
-	game.fill(cellN, directions, color)
+	for _, direction := range directions {
+		game.count(cellN, direction, color, game.changeTo(color))
+	}
 
 	game.log(game.String())
 	return nil
 }
 
-func (game Game) check(cellN int, color State) ([]direction, error) {
-	if game.cells[cellN] != Empty {
-		return nil, errors.New("cell not empty")
+func (game *Game) changeTo(color State) func(i int) {
+	return func(i int) {
+		game.cells[i] = color
 	}
-
-	column := cellN % 8
-	line := cellN / 8
-
-	directions := make([]direction, 0)
-
-	if column != 0 && game.cells[cellN-1].not(color) {
-		directions = append(directions, left)
-	}
-
-	if column != 7 && game.cells[cellN-1].not(color) {
-		directions = append(directions, right)
-	}
-
-	if line != 0 && game.cells[cellN-8].not(color) {
-		directions = append(directions, up)
-	}
-
-	if line != 7 && game.cells[cellN+8].not(color) {
-		directions = append(directions, down)
-	}
-
-	// TODO diagonals
-	// TODO fill with numbers
-
-	if len(directions) == 0 {
-		return nil, errors.New("no other color beside")
-	}
-
-	return directions, nil
-}
-
-func (game *Game) fill(cellN int, directions []direction, color State) int {
-	game.stepCellN = -1
-	count := 1
-	game.cells[cellN] = color
-	for _, direction := range directions {
-		switch direction {
-		case up:
-			for i := cellN - 8; game.cells[i].not(color); i -= 8 {
-				game.cells[i] = color
-				count++
-			}
-
-		case down:
-			for i := cellN + 8; game.cells[i].not(color); i += 8 {
-				game.cells[i] = color
-				count++
-			}
-
-		case left:
-			for i := cellN - 1; game.cells[i].not(color); i-- {
-				game.cells[i] = color
-				count++
-			}
-
-		case right:
-			for i := cellN + 1; game.cells[i].not(color); i++ {
-				game.cells[i] = color
-				count++
-			}
-		} // switch direction
-	} // range directions
-
-	return count
 }
 
 func (game *Game) count(cellN int, direction direction, color State, change ...func(i int)) int {
@@ -328,3 +272,5 @@ const (
 	leftdown
 	rightdown
 )
+
+var directionList = []direction{left, right, up, down, leftup, rightup, leftdown, rightdown}
