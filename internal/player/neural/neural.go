@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 	"sort"
-	"time"
 
 	"github.com/patrikeh/go-deep"
+	"github.com/patrikeh/go-deep/training"
 	"github.com/slonegd-go/reversi/internal/player"
 )
 
@@ -16,6 +16,7 @@ type Player struct {
 	weights [][][]float64 // обучение сохраняется при выйгрыше
 	inputs  []float64     // 30 ходов, по 64*2 бита на клетку=128 бит на ход, в один float64 влезает 32 бита, итого 4 float на ход
 	index   int
+	trainer training.Trainer
 }
 
 // TODO прочитать веса из файла
@@ -32,6 +33,7 @@ func New(filename string) *Player {
 		neural:  neural,
 		weights: neural.Weights(),
 		inputs:  make([]float64, 120),
+		trainer: training.NewTrainer(training.NewSGD(0.005, 0.5, 1e-6, true), 1),
 	}
 }
 
@@ -40,8 +42,8 @@ func (p *Player) Step(colors []player.Color, step func(string) error) {
 	p.updateInputs(colors)
 
 	for {
-		time.Sleep(500 * time.Millisecond)
-		log.Printf("inputs: %+v", p.inputs)
+		// time.Sleep(50 * time.Millisecond)
+		// log.Printf("inputs: %+v", p.inputs)
 		outputs := p.neural.Predict(p.inputs)
 
 		predict := []output{}
@@ -49,22 +51,32 @@ func (p *Player) Step(colors []player.Color, step func(string) error) {
 			predict = append(predict, output{
 				i:      i,
 				cell:   cell(i),
-				weight: f64,
+				weight: abs(f64),
 			})
 		}
 		sort.Slice(predict, func(i, j int) bool {
-			return abs(predict[i].weight) > abs(predict[j].weight) // по убыванию
+			return predict[i].weight > predict[j].weight // по убыванию
 		})
-		log.Printf("outputs: %+v", predict)
+		log.Printf("predict:\n\t%+v,\n\t%+v,\n\t%+v", predict[0], predict[1], predict[2])
+
+		k := 1.1
 		err := step(predict[0].cell)
 		if err != nil {
-			continue
+			k = 1 / k
+		}
+
+		outputs[predict[0].i] *= k
+		p.trainer.Train(p.neural, training.Examples{
+			{
+				Input:    p.inputs,
+				Response: outputs,
+			},
+		}, nil, 1)
+
+		if err == nil {
+			return
 		}
 	}
-
-	// если шаг неудачный, то понизить, удачный повысить
-	// если выйграл - сохранить, иначе вернуть до игры
-
 }
 
 func (p *Player) Notify(result player.Result) {

@@ -173,6 +173,10 @@ func (game *Game) Step(color player.Color, position string) error {
 
 	game.log(game.String())
 
+	if game.cells[cellN] != player.Empty {
+		return errors.New("cell not empty")
+	}
+
 	directions := []direction{}
 	for _, direction := range directionList {
 		if game.count(cellN, direction, color) != 0 {
