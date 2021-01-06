@@ -6,11 +6,12 @@ import (
 
 	"github.com/slonegd-go/reversi/internal/game"
 	"github.com/slonegd-go/reversi/internal/player/cli"
+	"github.com/slonegd-go/reversi/internal/player/neural"
 )
 
 func main() {
 	p1 := &cli.Player{}
-	p2 := &cli.Player{}
+	p2 := neural.New("")
 	currentGame := game.New(p1, p2, game.WithLogger(log.Printf))
 	currentGame.Start()
 
