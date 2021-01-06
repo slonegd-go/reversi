@@ -12,10 +12,15 @@ type Player struct {
 	color player.Color
 }
 
-func (player *Player) Step([]player.Color) string {
+func (player *Player) Step(colors []player.Color, step func(string) error) {
 	reader := bufio.NewReader(os.Stdin)
-	result, _ := reader.ReadString('\n')
-	return strings.TrimSpace(result)
+	for {
+		result, _ := reader.ReadString('\n')
+		err := step(strings.TrimSpace(result))
+		if err == nil {
+			return
+		}
+	}
 }
 func (player *Player) Notify(player.Result)    {}
 func (player *Player) SetColor(v player.Color) { player.color = v }

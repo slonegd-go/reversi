@@ -35,27 +35,36 @@ func New(filename string) *Player {
 	}
 }
 
-func (p *Player) Step(colors []player.Color) string {
-	time.Sleep(500 * time.Millisecond)
-	p.updateInputs(colors)
-	outputs := p.neural.Predict(p.inputs)
+func (p *Player) Step(colors []player.Color, step func(string) error) {
 
-	predict := []output{}
-	for i, f64 := range outputs {
-		predict = append(predict, output{
-			i:      i,
-			cell:   cell(i),
-			weight: f64,
+	p.updateInputs(colors)
+
+	for {
+		time.Sleep(500 * time.Millisecond)
+		log.Printf("inputs: %+v", p.inputs)
+		outputs := p.neural.Predict(p.inputs)
+
+		predict := []output{}
+		for i, f64 := range outputs {
+			predict = append(predict, output{
+				i:      i,
+				cell:   cell(i),
+				weight: f64,
+			})
+		}
+		sort.Slice(predict, func(i, j int) bool {
+			return abs(predict[i].weight) > abs(predict[j].weight) // по убыванию
 		})
+		log.Printf("outputs: %+v", predict)
+		err := step(predict[0].cell)
+		if err != nil {
+			continue
+		}
 	}
-	sort.Slice(predict, func(i, j int) bool {
-		return abs(predict[i].weight) > abs(predict[j].weight) // по убыванию
-	})
-	log.Printf("outputs: %+v", predict)
-	return predict[0].cell
+
 	// если шаг неудачный, то понизить, удачный повысить
 	// если выйграл - сохранить, иначе вернуть до игры
-	return ""
+
 }
 
 func (p *Player) Notify(result player.Result) {

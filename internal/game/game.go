@@ -12,7 +12,7 @@ import (
 )
 
 type Game struct {
-	cells     [64]player.Color
+	cells     []player.Color
 	stepCellN int
 	players   []player.Player
 	log       func(string, ...interface{})
@@ -31,7 +31,7 @@ func WithLogger(log func(string, ...interface{})) Option {
 }
 
 func New(p1, p2 player.Player, opts ...Option) *Game {
-	cells := [64]player.Color{}
+	cells := make([]player.Color, 64)
 	cells[27] = player.Green
 	cells[28] = player.Red
 	cells[35] = player.Red
@@ -64,16 +64,16 @@ func (game *Game) Start() string {
 	game.log(game.String())
 	for i := 0; i < 64; i++ {
 		currentPlayer := game.players[i%2]
-		for {
-			game.log("%s player step:", currentPlayer.Color())
-			position := currentPlayer.Step(nil)
+
+		game.log("%s player step:", currentPlayer.Color())
+		currentPlayer.Step(game.cells, func(position string) error {
 			err := game.Step(currentPlayer.Color(), position)
 			if err != nil {
 				game.log(err.Error())
-				continue
 			}
-			break
-		}
+			return err
+		})
+
 		end := game.endCheck(currentPlayer.Color())
 		if end {
 			winPlayer, losePlayer := game.compute()

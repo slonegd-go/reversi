@@ -39,7 +39,7 @@ const (
 )
 
 type Player interface {
-	Step([]Color) string
+	Step([]Color, func(string) error) // в функцию надо передать код ячейки
 	Notify(Result)
 	SetColor(Color)
 	Color() Color
