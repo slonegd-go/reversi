@@ -1,6 +1,10 @@
 package player
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/fatih/color"
+)
 
 type Color int
 type Result int
@@ -11,14 +15,19 @@ const (
 	Red
 )
 
+var (
+	green = color.New(color.FgGreen).SprintFunc()
+	red   = color.New(color.FgRed).SprintFunc()
+)
+
 func (c Color) String() string {
 	switch c {
 	case Empty:
 		return "empty"
 	case Green:
-		return "green"
+		return green("green")
 	case Red:
-		return "red"
+		return red("red")
 	default:
 		return fmt.Sprintf("undefined(%d)", c)
 	}

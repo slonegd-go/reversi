@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/slonegd-go/reversi/internal/player"
 	"github.com/slonegd-go/reversi/internal/player/cli"
 	"github.com/stretchr/testify/assert"
 )
@@ -11,7 +12,7 @@ import (
 func TestGame_Step(t *testing.T) {
 	tests := map[string]struct {
 		game     *Game
-		color    State
+		color    player.Color
 		position string
 		wantErr  string
 		wantGame string
@@ -75,7 +76,7 @@ func TestGame_count(t *testing.T) {
 		game      *Game
 		cellN     int
 		direction direction
-		color     State
+		color     player.Color
 		want      int
 		wantGame  string
 	}{
@@ -139,14 +140,14 @@ func n(s string) int {
 	return result
 }
 
-func c(s string) State {
+func c(s string) player.Color {
 	switch s {
 	case "Red":
-		return Red
+		return player.Red
 	case "Green":
-		return Green
+		return player.Green
 	}
-	return Empty
+	return player.Empty
 }
 
 func g(description string) *Game {
@@ -162,3 +163,8 @@ func g(description string) *Game {
 
 	return result
 }
+
+var (
+	Green = player.Green
+	Red   = player.Red
+)

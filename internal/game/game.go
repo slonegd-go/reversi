@@ -11,20 +11,8 @@ import (
 	"github.com/slonegd-go/reversi/internal/player"
 )
 
-type State int
-
-const (
-	Empty State = iota
-	Green
-	Red
-)
-
-func (state State) not(other State) bool {
-	return state != Empty && state != other
-}
-
 type Game struct {
-	cells     [64]State
+	cells     [64]player.Color
 	stepCellN int
 	players   []player.Player
 	log       func(string, ...interface{})
@@ -43,11 +31,11 @@ func WithLogger(log func(string, ...interface{})) Option {
 }
 
 func New(p1, p2 player.Player, opts ...Option) *Game {
-	cells := [64]State{}
-	cells[27] = Green
-	cells[28] = Red
-	cells[35] = Red
-	cells[36] = Green
+	cells := [64]player.Color{}
+	cells[27] = player.Green
+	cells[28] = player.Red
+	cells[35] = player.Red
+	cells[36] = player.Green
 
 	p1.SetColor(player.Green)
 	p2.SetColor(player.Red)
@@ -79,7 +67,7 @@ func (game *Game) Start() string {
 		for {
 			game.log("%s player step:", currentPlayer.Color())
 			position := currentPlayer.Step(nil)
-			err := game.Step(State(currentPlayer.Color()), position)
+			err := game.Step(currentPlayer.Color(), position)
 			if err != nil {
 				game.log(err.Error())
 				continue
@@ -100,9 +88,9 @@ func (game *Game) Start() string {
 }
 
 func (game *Game) endCheck(color player.Color) bool {
-	otherPlayer := Green
+	otherPlayer := player.Green
 	if color == player.Green {
-		otherPlayer = Red
+		otherPlayer = player.Red
 	}
 	return !game.hasSteps(otherPlayer)
 }
@@ -110,25 +98,25 @@ func (game *Game) endCheck(color player.Color) bool {
 func (game *Game) compute() (win player.Player, lose player.Player) {
 	win = game.players[0]
 	lose = game.players[1]
-	green, red := 0, 0
+	greenCount, redCount := 0, 0
 	for _, cell := range game.cells {
 		switch cell {
-		case Green:
-			green++
-		case Red:
-			red++
+		case player.Green:
+			greenCount++
+		case player.Red:
+			redCount++
 		}
 	}
-	game.log("green %d:%d red", green, red)
-	if red > green {
+	game.log("%s %d:%d %s", green("green"), greenCount, redCount, red("red"))
+	if redCount > greenCount {
 		win, lose = lose, win
 	}
 	return win, lose
 }
 
-func (game *Game) hasSteps(color State) bool {
+func (game *Game) hasSteps(color player.Color) bool {
 	for i, cell := range game.cells {
-		if cell != Empty {
+		if cell != player.Empty {
 			continue
 		}
 		for _, direction := range directionList {
@@ -158,11 +146,11 @@ func (game Game) String() string {
 				continue
 			}
 			switch game.cells[i*8+j] {
-			case Empty:
+			case player.Empty:
 				builder.WriteString("  ")
-			case Green:
+			case player.Green:
 				builder.WriteString(green(" G"))
-			case Red:
+			case player.Red:
 				builder.WriteString(red(" R"))
 			}
 		}
@@ -171,8 +159,8 @@ func (game Game) String() string {
 	return builder.String()
 }
 
-func (game *Game) Step(color State, position string) error {
-	if color != Green && color != Red {
+func (game *Game) Step(color player.Color, position string) error {
+	if color != player.Green && color != player.Red {
 		return errors.New("only green and red state available")
 	}
 
@@ -205,13 +193,13 @@ func (game *Game) Step(color State, position string) error {
 	return nil
 }
 
-func (game *Game) changeTo(color State) func(i int) {
+func (game *Game) changeTo(color player.Color) func(i int) {
 	return func(i int) {
 		game.cells[i] = color
 	}
 }
 
-func (game *Game) count(cellN int, direction direction, color State, change ...func(i int)) int {
+func (game *Game) count(cellN int, direction direction, color player.Color, change ...func(i int)) int {
 	changeFunc := func(_ int) {}
 	if len(change) != 0 {
 		changeFunc = change[0]
@@ -222,7 +210,7 @@ func (game *Game) count(cellN int, direction direction, color State, change ...f
 	case up:
 		i := cellN - 8
 		for ; i < 0 || game.cells[i] != color; i -= 8 {
-			if i < 8 || game.cells[i] == Empty {
+			if i < 8 || game.cells[i] == player.Empty {
 				return 0
 			}
 			changeFunc(i)
@@ -235,7 +223,7 @@ func (game *Game) count(cellN int, direction direction, color State, change ...f
 	case down:
 		i := cellN + 8
 		for ; i > 63 || game.cells[i] != color; i += 8 {
-			if i > 63-8 || game.cells[i] == Empty {
+			if i > 63-8 || game.cells[i] == player.Empty {
 				return 0
 			}
 			changeFunc(i)
@@ -248,7 +236,7 @@ func (game *Game) count(cellN int, direction direction, color State, change ...f
 	case left:
 		i := cellN - 1
 		for ; i < 0 || game.cells[i] != color; i-- {
-			if i < 0 || i%8 == 0 || game.cells[i] == Empty {
+			if i < 0 || i%8 == 0 || game.cells[i] == player.Empty {
 				return 0
 			}
 			changeFunc(i)
@@ -261,7 +249,7 @@ func (game *Game) count(cellN int, direction direction, color State, change ...f
 	case right:
 		i := cellN + 1
 		for ; i > 63 || game.cells[i] != color; i++ {
-			if i > 63 || i%8 == 7 || game.cells[i] == Empty {
+			if i > 63 || i%8 == 7 || game.cells[i] == player.Empty {
 				return 0
 			}
 			changeFunc(i)
@@ -274,7 +262,7 @@ func (game *Game) count(cellN int, direction direction, color State, change ...f
 	case leftup:
 		i := cellN - 9
 		for ; i < 0 || game.cells[i] != color; i -= 9 {
-			if i%8 == 0 || i < 8 || game.cells[i] == Empty {
+			if i%8 == 0 || i < 8 || game.cells[i] == player.Empty {
 				return 0
 			}
 			changeFunc(i)
@@ -287,7 +275,7 @@ func (game *Game) count(cellN int, direction direction, color State, change ...f
 	case rightup:
 		i := cellN - 7
 		for ; i < 0 || game.cells[i] != color; i -= 7 {
-			if i%8 == 7 || i < 8 || game.cells[i] == Empty {
+			if i%8 == 7 || i < 8 || game.cells[i] == player.Empty {
 				return 0
 			}
 			changeFunc(i)
@@ -300,7 +288,7 @@ func (game *Game) count(cellN int, direction direction, color State, change ...f
 	case rightdown:
 		i := cellN + 9
 		for ; i > 63 || game.cells[i] != color; i += 9 {
-			if i%8 == 7 || i > 63-8 || game.cells[i] == Empty {
+			if i%8 == 7 || i > 63-8 || game.cells[i] == player.Empty {
 				return 0
 			}
 			changeFunc(i)
@@ -313,7 +301,7 @@ func (game *Game) count(cellN int, direction direction, color State, change ...f
 	case leftdown:
 		i := cellN + 7
 		for ; i > 63 || game.cells[i] != color; i += 7 {
-			if i%8 == 0 || i > 63-8 || game.cells[i] == Empty {
+			if i%8 == 0 || i > 63-8 || game.cells[i] == player.Empty {
 				return 0
 			}
 			changeFunc(i)
