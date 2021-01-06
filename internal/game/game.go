@@ -66,7 +66,8 @@ func (game *Game) Start() string {
 		currentPlayer := game.players[i%2]
 
 		game.log("%s player step:", currentPlayer.Color())
-		currentPlayer.Step(game.cells, func(position string) error {
+		enabledCells := game.enabledSteps(currentPlayer.Color())
+		currentPlayer.Step(game.cells, enabledCells, func(position string) error {
 			err := game.Step(currentPlayer.Color(), position)
 			if err != nil {
 				game.log(err.Error())
@@ -92,7 +93,12 @@ func (game *Game) endCheck(color player.Color) bool {
 	if color == player.Green {
 		otherPlayer = player.Red
 	}
-	return !game.hasSteps(otherPlayer)
+	for _, b := range game.enabledSteps(otherPlayer) {
+		if b {
+			return false
+		}
+	}
+	return true
 }
 
 func (game *Game) compute() (win player.Player, lose player.Player) {
@@ -114,18 +120,23 @@ func (game *Game) compute() (win player.Player, lose player.Player) {
 	return win, lose
 }
 
-func (game *Game) hasSteps(color player.Color) bool {
+func (game *Game) enabledSteps(color player.Color) []bool {
+	result := make([]bool, 0, 64)
 	for i, cell := range game.cells {
 		if cell != player.Empty {
+			result = append(result, false)
 			continue
 		}
+		enabled := false
 		for _, direction := range directionList {
 			if game.count(i, direction, color) != 0 {
-				return true
+				enabled = true
+				break
 			}
 		}
+		result = append(result, enabled)
 	}
-	return false
+	return result
 }
 
 var (

@@ -12,7 +12,7 @@ type Player struct {
 	color player.Color
 }
 
-func (player *Player) Step(colors []player.Color, step func(string) error) {
+func (player *Player) Step(colors []player.Color, _ []bool, step func(string) error) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		result, _ := reader.ReadString('\n')

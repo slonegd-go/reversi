@@ -39,7 +39,9 @@ const (
 )
 
 type Player interface {
-	Step([]Color, func(string) error) // в функцию надо передать код ячейки
+	// второй слайс доступности ячеек
+	// в функцию надо передать код ячейки
+	Step([]Color, []bool, func(string) error)
 	Notify(Result)
 	SetColor(Color)
 	Color() Color
