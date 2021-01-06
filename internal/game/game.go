@@ -212,6 +212,9 @@ func (game *Game) count(cellN int, direction direction, color player.Color, chan
 
 	switch direction {
 	case up:
+		if cellN < 8 { // border
+			return 0
+		}
 		i := cellN - 8
 		for ; i < 0 || game.cells[i] != color; i -= 8 {
 			if i < 8 || game.cells[i] == player.Empty {
@@ -225,6 +228,9 @@ func (game *Game) count(cellN int, direction direction, color player.Color, chan
 		}
 
 	case down:
+		if cellN > 63-8 { // border
+			return 0
+		}
 		i := cellN + 8
 		for ; i > 63 || game.cells[i] != color; i += 8 {
 			if i > 63-8 || game.cells[i] == player.Empty {
@@ -238,6 +244,9 @@ func (game *Game) count(cellN int, direction direction, color player.Color, chan
 		}
 
 	case left:
+		if cellN%8 == 0 { // border
+			return 0
+		}
 		i := cellN - 1
 		for ; i < 0 || game.cells[i] != color; i-- {
 			if i < 0 || i%8 == 0 || game.cells[i] == player.Empty {
@@ -251,6 +260,9 @@ func (game *Game) count(cellN int, direction direction, color player.Color, chan
 		}
 
 	case right:
+		if cellN%8 == 7 { // border
+			return 0
+		}
 		i := cellN + 1
 		for ; i > 63 || game.cells[i] != color; i++ {
 			if i > 63 || i%8 == 7 || game.cells[i] == player.Empty {
@@ -264,6 +276,9 @@ func (game *Game) count(cellN int, direction direction, color player.Color, chan
 		}
 
 	case leftup:
+		if cellN < 8 || cellN%8 == 0 { // border
+			return 0
+		}
 		i := cellN - 9
 		for ; i < 0 || game.cells[i] != color; i -= 9 {
 			if i%8 == 0 || i < 8 || game.cells[i] == player.Empty {
@@ -277,6 +292,9 @@ func (game *Game) count(cellN int, direction direction, color player.Color, chan
 		}
 
 	case rightup:
+		if cellN < 8 || cellN%8 == 7 { // border
+			return 0
+		}
 		i := cellN - 7
 		for ; i < 0 || game.cells[i] != color; i -= 7 {
 			if i%8 == 7 || i < 8 || game.cells[i] == player.Empty {
@@ -290,6 +308,9 @@ func (game *Game) count(cellN int, direction direction, color player.Color, chan
 		}
 
 	case rightdown:
+		if cellN > 63-8 || cellN%8 == 7 { // border
+			return 0
+		}
 		i := cellN + 9
 		for ; i > 63 || game.cells[i] != color; i += 9 {
 			if i%8 == 7 || i > 63-8 || game.cells[i] == player.Empty {
@@ -303,6 +324,9 @@ func (game *Game) count(cellN int, direction direction, color player.Color, chan
 		}
 
 	case leftdown:
+		if cellN > 63-8 || cellN%8 == 0 { // border
+			return 0
+		}
 		i := cellN + 7
 		for ; i > 63 || game.cells[i] != color; i += 7 {
 			if i%8 == 0 || i > 63-8 || game.cells[i] == player.Empty {
