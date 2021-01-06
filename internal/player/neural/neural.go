@@ -97,7 +97,7 @@ func (p *Player) updateInputs(colors []player.Color) {
 		uints[index] = uints[index] | 0b10<<offset
 	}
 	for _, ui := range uints {
-		p.inputs[p.index] = float64(ui)
+		p.inputs[p.index] = 1. / float64(ui)
 		p.index++
 	}
 }

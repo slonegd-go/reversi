@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/slonegd-go/reversi/internal/game"
@@ -10,6 +11,8 @@ import (
 )
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	p1 := &cli.Player{}
 	p2 := neural.New("")
 	currentGame := game.New(p1, p2, game.WithLogger(log.Printf))
