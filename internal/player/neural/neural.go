@@ -20,11 +20,18 @@ type Player struct {
 	index    int
 	trainer  training.Trainer
 	filename string
+	steps    []step // для тренировки
 }
 
 type persist struct {
 	Weights             [][][]float64
 	WinCount, LoseCount int
+}
+
+type step struct {
+	inputs      []float64
+	outputs     []float64
+	outputIndex int
 }
 
 func (p *Player) Stats() {
@@ -55,12 +62,12 @@ func New(filename string) *Player {
 		neural:   neural,
 		persist:  persist,
 		inputs:   make([]float64, 240),
-		trainer:  training.NewTrainer(training.NewSGD(0.005, 0.5, 1e-6, true), 1),
+		trainer:  training.NewTrainer(training.NewSGD(0.005, 0.5, 1e-6, true), 0),
 		filename: filename,
 	}
 }
 
-func (p *Player) Step(colors []player.Color, enabledCells []bool, step func(string) error) {
+func (p *Player) Step(colors []player.Color, enabledCells []bool, stepFunc func(string) error) {
 
 	p.updateInputs(colors)
 
@@ -91,26 +98,17 @@ func (p *Player) Step(colors []player.Color, enabledCells []bool, step func(stri
 		log.Printf("predict:\n\t%+v,\n\t%+v,\n\t%+v,\n\t%+v,\n\t%+v",
 			predict[0], predict[1], predict[2], predict[3], predict[4])
 
-		k := 10.
-		err := step(predict[0].cell)
+		err := stepFunc(predict[0].cell)
 		if err != nil {
-			k = 0
+			continue
 		}
 
-		outputs[predict[0].i] *= k
-
-		// TODO если проиграл, то понизить кофжжфициенты, которые к этому привели
-		// тренировать только один раз - по результату игры
-		p.trainer.Train(p.neural, training.Examples{
-			{
-				Input:    p.inputs,
-				Response: outputs,
-			},
-		}, nil, 1)
-
-		if err == nil {
-			return
-		}
+		p.steps = append(p.steps, step{
+			inputs:      p.inputs,
+			outputs:     outputs,
+			outputIndex: predict[0].i,
+		})
+		break
 	}
 }
 
@@ -118,14 +116,27 @@ func (p *Player) Notify(result player.Result) {
 	p.inputs = make([]float64, 240)
 	p.index = 0
 
-	if result == player.Win {
-		p.persist.Weights = p.neural.Weights()
-		p.persist.WinCount++
-	} else {
+	k := 1.1 // увеличение удачных шагов на 10%
+	if result == player.Lose {
 		p.persist.LoseCount++
-		p.neural.ApplyWeights(p.persist.Weights) // в случае проигыша не запоминаем обученое
+		k = 1 / k // если проиграли, то опустить неудачные шаги на теже 10%
+	} else {
+		p.persist.WinCount++
 	}
 
+	examples := make([]training.Example, 0, len(p.steps))
+	for _, step := range p.steps {
+		step.outputs[step.outputIndex] *= k
+		examples = append(examples, training.Example{
+			Input:    step.inputs,
+			Response: step.outputs,
+		})
+	}
+	p.steps = make([]step, 0, 30)
+
+	p.trainer.Train(p.neural, examples, nil, 1)
+
+	p.persist.Weights = p.neural.Weights()
 	file, err := os.Create(p.filename)
 	if err == nil {
 		gob.NewEncoder(file).Encode(p.persist)
@@ -141,6 +152,7 @@ func (p *Player) updateInputs(colors []player.Color) {
 		offset := (i % 8) * 2
 		index := i / 8
 		if color == player.Empty {
+			uints[index] = uints[index] | 0b11<<offset
 			continue
 		}
 		if color == p.color {
