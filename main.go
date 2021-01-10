@@ -2,60 +2,66 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"math/rand"
+	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/slonegd-go/reversi/internal/evolution"
 	"github.com/slonegd-go/reversi/internal/game"
 	"github.com/slonegd-go/reversi/internal/player/cli"
 	"github.com/slonegd-go/reversi/internal/player/neural"
 )
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
 
-	stats := flag.Bool("stats", false, "return stats")
-	player := flag.Int("player", 0, "play with neural")
+	stats := flag.Int("stats", 0, "return stats of epoch")
+	player := flag.String("player", "", "play with neural")
 	flag.Parse()
 
-	// p1 := &cli.Player{}
-	players := []*neural.Player{
-		neural.New("./players/01.go"),
-		neural.New("./players/02.go"),
-		// neural.New("./players/03.go"),
-		// neural.New("./players/04.go"),
-		// neural.New("./players/05.go"),
-		// neural.New("./players/06.go"),
-		// neural.New("./players/07.go"),
-		// neural.New("./players/08.go"),
-		// neural.New("./players/09.go"),
-		// neural.New("./players/10.go"),
-	}
-	if *stats {
+	if *stats != 0 {
+		epoch := *stats
+		path := filepath.Join(".", "players", fmt.Sprintf("epoch%d", epoch))
+		players := []*neural.Player{
+			neural.New(path, fmt.Sprintf("%d_1", epoch)),
+			neural.New(path, fmt.Sprintf("%d_2", epoch)),
+			neural.New(path, fmt.Sprintf("%d_3", epoch)),
+			neural.New(path, fmt.Sprintf("%d_4", epoch)),
+			neural.New(path, fmt.Sprintf("%d_5", epoch)),
+			neural.New(path, fmt.Sprintf("%d_6", epoch)),
+			neural.New(path, fmt.Sprintf("%d_7", epoch)),
+			neural.New(path, fmt.Sprintf("%d_8", epoch)),
+			neural.New(path, fmt.Sprintf("%d_9", epoch)),
+		}
 		for _, p := range players {
-			p.Stats()
+			if p.WinCount() != 0 {
+				p.Stats()
+			}
 		}
+
+		gameCount := 0
+		for _, player := range players {
+			gameCount += player.WinCount()
+		}
+		log.Printf("games count %d", gameCount)
 		return
 	}
-	if *player > 0 {
+
+	if *player != "" {
+		tmp := strings.Split(*player, "_")
+		epoch := tmp[0]
+		path := filepath.Join(".", "players", fmt.Sprintf("epoch%s", epoch))
+		n := neural.New(path, *player)
 		p := &cli.Player{}
-		currentGame := game.New(players[*player-1], p, game.WithLogger(log.Printf))
+		currentGame := game.New(n, p, game.WithLogger(log.Printf))
 		currentGame.Start()
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 		return
 	}
 
-	for {
-		p1 := rand.Intn(2)
-		p2 := rand.Intn(2)
-		for p1 == p2 {
-			p2 = rand.Intn(2)
-		}
-		currentGame := game.New(players[p1], players[p2], game.WithLogger(log.Printf))
-
-		currentGame.Start()
-
-		log.Printf("green is %d, red is %d", p1, p2)
-	}
+	rand.Seed(time.Now().UnixNano())
+	evolution.Start()
 
 }

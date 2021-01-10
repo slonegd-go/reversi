@@ -4,7 +4,9 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
+	"path/filepath"
 	"sort"
 
 	"github.com/patrikeh/go-deep"
@@ -19,6 +21,7 @@ type Player struct {
 	inputs   []float64
 	index    int
 	trainer  training.Trainer
+	path     string
 	filename string
 	steps    []step // для тренировки
 }
@@ -26,6 +29,8 @@ type Player struct {
 type persist struct {
 	Weights             [][][]float64
 	WinCount, LoseCount int
+	EpochCount          int
+	LastFilename        string
 }
 
 type step struct {
@@ -35,27 +40,85 @@ type step struct {
 }
 
 func (p *Player) Stats() {
-	log.Printf("%s win\t%d:%d\tlose, ratio %f", p.filename, p.persist.WinCount, p.persist.LoseCount, float32(p.persist.WinCount)/float32(p.persist.LoseCount))
+	log.Printf("%s win\t%d:%d\tlose, ratio %f, epochs count %d, last file %q",
+		p.filename, p.persist.WinCount, p.persist.LoseCount, p.WinRatio(), p.persist.EpochCount, p.persist.LastFilename)
 }
 
-func New(filename string) *Player {
+func (p *Player) WinCount() int {
+	return p.persist.WinCount
+}
+
+func (p *Player) WinRatio() float32 {
+	return float32(p.persist.WinCount) / float32(p.persist.LoseCount)
+}
+
+func (p *Player) CopyToFilename(path string, filename string, changeWeight ...bool) *Player {
+	tmp := *p
+	result := &tmp
+
+	result.persist.LastFilename = result.filename
+	result.filename = filepath.Join(path, filename)
+	result.path = path
+	result.persist.EpochCount++
+	result.persist.WinCount = 0
+	result.persist.LoseCount = 0
+
+	if len(changeWeight) != 0 {
+		result.persist.EpochCount = 0
+		result.persist.LastFilename = ""
+		weights := make([][][]float64, 0)
+		for _, layer := range result.persist.Weights {
+			layers := make([][]float64, 0)
+			for _, neuron := range layer {
+				neurons := make([]float64, 0)
+				for _, weight := range neuron {
+					r := rand.Intn(100)
+					if r < 40 {
+						neurons = append(neurons, weightFunc())
+					} else {
+						neurons = append(neurons, weight)
+					}
+				}
+				layers = append(layers, neurons)
+			}
+			weights = append(weights, layers)
+		}
+		result.persist.Weights = weights
+	}
+
+	if err := os.MkdirAll(p.path, os.ModePerm); err != nil {
+		log.Printf(err.Error())
+		return result
+	}
+	file, err := os.Create(result.filename)
+	if err == nil {
+		gob.NewEncoder(file).Encode(result.persist)
+	}
+	return p
+}
+
+var weightFunc = deep.NewNormal(1, 0)
+
+func New(path, filename string) *Player {
 	neural := deep.NewNeural(&deep.Config{
 		Inputs:     240,
-		Layout:     []int{360, 480, 600, 480, 360, 240, 120, 60},
+		Layout:     []int{360, 480, 360, 240, 120, 60},
 		Activation: deep.ActivationSigmoid,
 		Mode:       deep.ModeRegression,
-		Weight:     deep.NewNormal(1, 0),
+		Weight:     weightFunc,
 		Bias:       true,
 	})
 	persist := persist{
 		Weights: neural.Weights(),
 	}
 
-	file, err := os.Open(filename)
+	file, err := os.Open(filepath.Join(path, filename))
 	if err == nil {
 		defer file.Close()
 		gob.NewDecoder(file).Decode(&persist)
 		neural.ApplyWeights(persist.Weights)
+	} else {
+		log.Printf(err.Error())
 	}
 
 	return &Player{
@@ -63,7 +126,8 @@ func New(filename string) *Player {
 		persist:  persist,
 		inputs:   make([]float64, 240),
 		trainer:  training.NewTrainer(training.NewSGD(0.005, 0.5, 1e-6, true), 0),
-		filename: filename,
+		path:     path,
+		filename: filepath.Join(path, filename),
 	}
 }
 
@@ -116,10 +180,10 @@ func (p *Player) Notify(result player.Result) {
 	p.inputs = make([]float64, 240)
 	p.index = 0
 
-	k := 1.1 // увеличение удачных шагов на 10%
+	k := 2. // увеличение удачных шагов
 	if result == player.Lose {
 		p.persist.LoseCount++
-		k = 1 / k // если проиграли, то опустить неудачные шаги на теже 10%
+		k = 1 / k // если проиграли, то опустить неудачные шаги
 	} else {
 		p.persist.WinCount++
 	}
@@ -137,9 +201,15 @@ func (p *Player) Notify(result player.Result) {
 	p.trainer.Train(p.neural, examples, nil, 1)
 
 	p.persist.Weights = p.neural.Weights()
+	if err := os.MkdirAll(p.path, os.ModePerm); err != nil {
+		log.Printf(err.Error())
+		return
+	}
 	file, err := os.Create(p.filename)
 	if err == nil {
 		gob.NewEncoder(file).Encode(p.persist)
+	} else {
+		log.Printf(err.Error())
 	}
 }
 
